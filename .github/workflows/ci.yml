@@ -26,5 +26,4 @@ jobs:
       - name: Run go test with coverage
         run: go test -v -coverprofile=./cover.out ./...
       - name: Print test coverage
-        if: failure() || success()
         run: go tool cover -func=./cover.out

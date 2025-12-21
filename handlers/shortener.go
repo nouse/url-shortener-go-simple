@@ -28,7 +28,7 @@ func (s *Shortener) Encode(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.Logger.ErrorContext(ctx, "failed to decode request body", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w,"failed to decode request body")
+		fmt.Fprintln(w, "failed to decode request body")
 		return
 	}
 	_, err = url.Parse(p.URL)
@@ -45,7 +45,6 @@ func (s *Shortener) Encode(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "failed to encode URL")
 		return
 	}
-
 	if err := json.NewEncoder(w).Encode(shortURL); err != nil {
 		s.Logger.ErrorContext(ctx, "failed to encode response", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)

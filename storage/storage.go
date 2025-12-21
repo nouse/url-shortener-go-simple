@@ -32,17 +32,22 @@ type ShortURL struct {
 type FileStorage struct {
 	list     map[string]ShortURL
 	alphabet []byte
-	rand *rand.Rand
-	rw   io.ReadWriter
+	rand     *rand.Rand
+	rw       io.ReadWriter
 }
 
 const (
 	codeLength     = 6
 	base32Alphabet = "abcdefghijklmnopqrstuvwxyz234567"
+	randSeed       = ")Bo_ItkHpnwoM7PiK9\\J]QTER\\uGB#2" // sf-pwgen -l 32 -a random
 )
 
 func NewFileStorage(rw io.ReadWriter) (*FileStorage, error) {
-	rng := rand.New(rand.NewPCG(13, 37))
+	var seed [32]byte
+	for i, rune := range randSeed {
+		seed[i] = byte(rune)
+	}
+	rng := rand.New(rand.NewChaCha8(seed))
 	s := []byte(base32Alphabet)
 	rng.Shuffle(32, func(i, j int) { s[i], s[j] = s[j], s[i] })
 
@@ -90,8 +95,8 @@ func (s *FileStorage) StoreURL(url string) (ShortURL, error) {
 	}
 
 	shortURL := ShortURL{
-		Code:  code,
-		URL:   url,
+		Code: code,
+		URL:  url,
 	}
 	data, _ := json.Marshal(shortURL)
 	if _, err := s.rw.Write(append(data, '\n')); err != nil {
