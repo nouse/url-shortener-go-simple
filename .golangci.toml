@@ -1,0 +1,94 @@
+version = "2"
+
+[linters]
+enable = [
+  "asciicheck",
+  "bidichk",
+  "bodyclose",
+  "containedctx",
+  "contextcheck",
+  "copyloopvar",
+  "decorder",
+  "dogsled",
+  "durationcheck",
+  "errname",
+  "errorlint",
+  "exhaustive",
+  "exptostd",
+  "forcetypeassert",
+  "gocheckcompilerdirectives",
+  "gochecknoglobals",
+  "gochecknoinits",
+  "gocognit",
+  "goconst",
+  "gocritic",
+  "gomodguard",
+  "goprintffuncname",
+  "govet",
+  "grouper",
+  "iface",
+  "importas",
+  "ineffassign",
+  "interfacebloat",
+  "intrange",
+  "ireturn",
+  "loggercheck",
+  "maintidx",
+  "makezero",
+  "mirror",
+  "misspell",
+  "modernize",
+  "nestif",
+  "nilerr",
+  "noctx",
+  "nolintlint",
+  "nosprintfhostport",
+  "perfsprint",
+  "prealloc",
+  "predeclared",
+  "promlinter",
+  "protogetter",
+  "reassign",
+  "recvcheck",
+  "rowserrcheck",
+  "sloglint",
+  "spancheck",
+  "sqlclosecheck",
+  "staticcheck",
+  "testifylint",
+  "thelper",
+  "tparallel",
+  "unconvert",
+  "unparam",
+  "unused",
+  "unused",
+  "usestdlibvars",
+  "usetesting",
+  "wastedassign",
+  "whitespace",
+]
+[linters.settings]
+[linters.settings.loggercheck]
+require-string-key = true
+no-printf-like = true
+slog = true
+
+[linters.settings.nolintlint]
+require-explanation = true
+require-specific = true
+
+[linters.settings.sloglint]
+context = "all"
+no-global = "all"
+
+[linters.exclusions]
+generated = "lax"
+presets = ["comments", "common-false-positives", "legacy", "std-error-handling"]
+paths = ["third_party$", "builtin$", "examples$"]
+
+[formatters]
+enable = ["gci", "gofumpt"]
+
+[formatters.exclusions]
+generated = "lax"
+paths = ["third_party$", "builtin$", "examples$"]
