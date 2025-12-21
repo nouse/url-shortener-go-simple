@@ -15,20 +15,13 @@ import (
 )
 
 func main() {
-	returnCode := 0
-	defer func() {
-		os.Exit(returnCode)
-	}()
-
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
-	defer stop()
+	rootCtx := context.Background()
 
 	shortener, err := initService(logger)
 	if err != nil {
-		logger.ErrorContext(ctx, "failed to init service", "error", err)
-		returnCode = 1
-		return
+		logger.ErrorContext(rootCtx, "failed to init service", "error", err)
+		os.Exit(1)
 	}
 
 	server := &http.Server{
@@ -39,21 +32,30 @@ func main() {
 		Handler:        shortener,
 	}
 
+	returnCode := 0
+	defer func() {
+		os.Exit(returnCode)
+	}()
+
+	ctx, stop := signal.NotifyContext(rootCtx, os.Interrupt, os.Kill)
 	go func() {
 		logger.InfoContext(ctx, "Listening on", "port", 8080)
 		if err := server.ListenAndServe(); err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
 				logger.ErrorContext(ctx, "Server closed unexpectedly", "error", err)
+				returnCode = 1
+				stop()
 			}
 		}
 	}()
-
 	<-ctx.Done()
-	if err := server.Shutdown(ctx); err != nil {
-		logger.ErrorContext(ctx, "server shutdown failed", "error", err)
+
+	// Use rootCtx as ctx is already cancelled
+	if err := server.Shutdown(rootCtx); err != nil {
+		logger.ErrorContext(rootCtx, "server shutdown failed", "error", err)
 		returnCode = 1
 	}
-	logger.InfoContext(ctx, "server exited")
+	logger.InfoContext(rootCtx, "server exited")
 }
 
 func initService(logger *slog.Logger) (http.Handler, error) {
