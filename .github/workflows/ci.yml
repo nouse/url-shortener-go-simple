@@ -24,9 +24,7 @@ jobs:
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
       - name: Run go test with coverage
-        run: go test -coverprofile=./cover.out ./...
-      - name: Check test coverage
+        run: go test -v -coverprofile=./cover.out ./...
+      - name: Print test coverage
         if: failure() || success()
-        uses: vladopajic/go-test-coverage@v2
-        with:
-          profile: cover.out
+        run: go tool cover -func=./cover.out
