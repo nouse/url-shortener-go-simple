@@ -7,6 +7,7 @@ import (
 )
 
 const fileContent = `{"code": "aaa", "url": "http://example.com/v1"}
+{"code": bbb", "url": "http://example.com/v2"}
 {"code": "bbb", "url": "http://example.com/v2", "visit": 2}`
 
 func TestNewFileStorage(t *testing.T) {
@@ -21,7 +22,7 @@ func TestNewFileStorage(t *testing.T) {
 	})
 	t.Run("test with fileContent", func(t *testing.T) {
 		fs, err := NewFileStorage(bytes.NewBufferString(fileContent))
-		if err != nil {
+		if !errors.Is(err, ErrInvalidFormat) {
 			t.Fatalf("NewFileStorage() error = %v", err)
 		}
 		if len(fs.list) != 2 {
@@ -50,7 +51,7 @@ func TestFileStorageShortCodeCollision(t *testing.T) {
 
 func TestFileStorage_GetURLByCode(t *testing.T) {
 	fs, err := NewFileStorage(bytes.NewBufferString(fileContent))
-	if err != nil {
+	if !errors.Is(err, ErrInvalidFormat) {
 		t.Fatalf("NewFileStorage() error = %v", err)
 	}
 
