@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,12 +16,31 @@ import (
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	rootCtx := context.Background()
+	returnCode := 0
+	defer func() {
+		os.Exit(returnCode)
+	}()
 
-	shortener, err := initService(logger)
+	f, err := os.OpenFile("urls.txt", os.O_CREATE|os.O_APPEND, 0o644)
 	if err != nil {
-		logger.ErrorContext(rootCtx, "failed to init service", "error", err)
-		os.Exit(1)
+		logger.ErrorContext(rootCtx, "failed to open urls.txt", "error", err)
+		returnCode = 1
+		return
 	}
+	defer f.Close()
+
+	st, err := storage.NewFileStorage(f)
+	if err != nil {
+		if errors.Is(err, storage.ErrInvalidFormat) {
+			logger.ErrorContext(rootCtx, "invalid format", "error", err)
+			logger.InfoContext(rootCtx, "continue with remaining lines", "count", st.Len())
+		} else {
+			logger.ErrorContext(rootCtx, "unknown error", "error", err)
+			returnCode = 1
+			return
+		}
+	}
+	shortener := handlers.NewShortener(logger, st)
 
 	server := &http.Server{
 		Addr:           ":8080",
@@ -31,11 +49,6 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 		Handler:        shortener,
 	}
-
-	returnCode := 0
-	defer func() {
-		os.Exit(returnCode)
-	}()
 
 	ctx, stop := signal.NotifyContext(rootCtx, os.Interrupt, os.Kill)
 	go func() {
@@ -56,21 +69,4 @@ func main() {
 		returnCode = 1
 	}
 	logger.InfoContext(rootCtx, "server exited")
-}
-
-func initService(logger *slog.Logger) (http.Handler, error) {
-	f, err := os.Open("urls.txt")
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			f, err = os.Create("urls.txt")
-		}
-		if err != nil { // reevaluate error after os.Create
-			return nil, fmt.Errorf("failed to open urls.txt: %w", err)
-		}
-	}
-	s, err := storage.NewFileStorage(f)
-	if err != nil { // reevaluate error after os.Create
-		return nil, fmt.Errorf("failed to parse urls.txt: %w", err)
-	}
-	return handlers.NewShortener(logger, s), nil
 }
