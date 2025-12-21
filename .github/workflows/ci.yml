@@ -23,6 +23,10 @@ jobs:
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
-      - name: Run go test
-        run: go test ./... -v
-      # TODO show coverage in CI
+      - name: Run go test with coverage
+        run: go test -coverprofile=./cover.out ./...
+      - name: Check test coverage
+        if: failure() && success()
+        uses: vladopajic/go-test-coverage@v2
+        with:
+          profile: cover.out
