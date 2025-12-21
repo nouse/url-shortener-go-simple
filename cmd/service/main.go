@@ -21,7 +21,7 @@ func main() {
 		os.Exit(returnCode)
 	}()
 
-	f, err := os.OpenFile("urls.txt", os.O_CREATE|os.O_APPEND, 0o644)
+	f, err := os.OpenFile("urls.txt", os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
 		logger.ErrorContext(rootCtx, "failed to open urls.txt", "error", err)
 		returnCode = 1

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ type Storage interface {
 var (
 	ErrNotFound      = errors.New("code not found")
 	ErrInvalidFormat = errors.New("invalid format")
+	ErrDuplicateCode = errors.New("code collision")
 )
 
 type ShortURL struct {
@@ -30,8 +32,8 @@ type ShortURL struct {
 type FileStorage struct {
 	list     map[string]ShortURL
 	alphabet []byte
-	rand     *rand.Rand
-	rwCloser io.ReadWriter
+	rand *rand.Rand
+	rw   io.ReadWriter
 }
 
 const (
@@ -39,7 +41,7 @@ const (
 	base32Alphabet = "abcdefghijklmnopqrstuvwxyz234567"
 )
 
-func NewFileStorage(rwCloser io.ReadWriter) (*FileStorage, error) {
+func NewFileStorage(rw io.ReadWriter) (*FileStorage, error) {
 	rng := rand.New(rand.NewPCG(13, 37))
 	s := []byte(base32Alphabet)
 	rng.Shuffle(32, func(i, j int) { s[i], s[j] = s[j], s[i] })
@@ -48,12 +50,16 @@ func NewFileStorage(rwCloser io.ReadWriter) (*FileStorage, error) {
 		list:     make(map[string]ShortURL),
 		rand:     rng,
 		alphabet: s,
-		rwCloser: rwCloser,
+		rw:       rw,
 	}
 
 	var errLines []string
-	buf := bufio.NewScanner(rwCloser)
+	buf := bufio.NewScanner(rw)
 	for buf.Scan() {
+		b := buf.Bytes()
+		if len(bytes.TrimSpace(b)) == 0 {
+			continue
+		}
 		var s ShortURL
 		if err := json.Unmarshal(buf.Bytes(), &s); err != nil {
 			errLines = append(errLines, buf.Text())
@@ -78,11 +84,39 @@ func (s *FileStorage) GetURLByCode(code string) (ShortURL, error) {
 
 // StoreURL save url and code by appending a new line to writer
 func (s *FileStorage) StoreURL(url string) (ShortURL, error) {
-	return ShortURL{}, nil
+	code := s.shortID()
+	if _, ok := s.list[code]; ok {
+		return ShortURL{}, ErrDuplicateCode
+	}
+
+	shortURL := ShortURL{
+		Code:  code,
+		URL:   url,
+	}
+	data, _ := json.Marshal(shortURL)
+	if _, err := s.rw.Write(append(data, '\n')); err != nil {
+		return ShortURL{}, err
+	}
+
+	s.list[code] = shortURL
+	return shortURL, nil
 }
 
 // Increment the visit count and append a new line
 func (s *FileStorage) Increment(code string) error {
+	shortURL, ok := s.list[code]
+	if !ok {
+		return ErrNotFound
+	}
+
+	shortURL.Visit++
+
+	data, _ := json.Marshal(shortURL)
+	if _, err := s.rw.Write(append(data, '\n')); err != nil {
+		return err
+	}
+
+	s.list[code] = shortURL
 	return nil
 }
 
