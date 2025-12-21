@@ -3,11 +3,13 @@ package storage
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"math/rand/v2"
+	"os"
 	"strings"
 )
 
@@ -43,11 +45,13 @@ const (
 )
 
 func NewFileStorage(rw io.ReadWriter) (*FileStorage, error) {
-	var seed [32]byte
-	for i, rune := range randSeed {
-		seed[i] = byte(rune)
+	var seedBytes [32]byte
+	if seed := os.Getenv("SEED"); seed != "" {
+		seedBytes = sha256.Sum256([]byte(seed))
+	} else {
+		seedBytes = sha256.Sum256([]byte(randSeed))
 	}
-	rng := rand.New(rand.NewChaCha8(seed))
+	rng := rand.New(rand.NewChaCha8(seedBytes))
 	s := []byte(base32Alphabet)
 	rng.Shuffle(32, func(i, j int) { s[i], s[j] = s[j], s[i] })
 
