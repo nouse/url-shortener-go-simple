@@ -26,7 +26,7 @@ jobs:
       - name: Run go test with coverage
         run: go test -coverprofile=./cover.out ./...
       - name: Check test coverage
-        if: failure() && success()
+        if: failure() || success()
         uses: vladopajic/go-test-coverage@v2
         with:
           profile: cover.out
