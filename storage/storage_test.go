@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -33,5 +34,53 @@ func TestFileStorageShortCode(t *testing.T) {
 			break
 		}
 		codes[c] = true
+	}
+}
+
+func TestFileStorage_GetURLByCode(t *testing.T) {
+	j := `{
+  "aaa": { "url" : "http://example.com/v1" },
+  "bbb": { "url" : "http://example.com/v2", "visit": 2 }
+}`
+	fs, err := NewFileStorage(strings.NewReader(j))
+	if err != nil {
+		t.Fatalf("NewFileStorage() error = %v", err)
+	}
+
+	testCases := []struct {
+		code,
+		url string
+		visit int
+		err   error
+	}{
+		{
+			code: "aaa",
+			url:  "http://example.com/v1",
+		},
+		{
+			code:  "bbb",
+			url:   "http://example.com/v2",
+			visit: 2,
+		},
+		{
+			code: "ccc",
+			url:  "",
+			err:  ErrNotFound,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run("fetching "+tc.code, func(t *testing.T) {
+			s, err := fs.GetURLByCode(t.Context(), tc.code)
+			if !errors.Is(err, tc.err) {
+				t.Fatalf("GetURLByCode() error = %v, want %v", err, tc.err)
+			}
+			if s.URL != tc.url {
+				t.Errorf("GetURLByCode() got = %v, want %v", s.URL, tc.url)
+			}
+			if s.Visit != tc.visit {
+				t.Errorf("GetURLByCode() got = %v, want %v", s.Visit, tc.visit)
+			}
+		})
 	}
 }
