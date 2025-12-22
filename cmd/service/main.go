@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/nouse/url-shortener-go-simple/handlers"
@@ -50,7 +51,9 @@ func main() {
 		Handler:        shortener,
 	}
 
-	ctx, stop := signal.NotifyContext(rootCtx, os.Interrupt, os.Kill)
+	// - SIGINT: Keyboard interrupt, triggered by CTRL-C.
+	// - SIGTERM: The default signal to ask the process to terminate gracefully.
+	ctx, stop := signal.NotifyContext(rootCtx, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		logger.InfoContext(ctx, "Listening on", "port", 8080)
 		if err := server.ListenAndServe(); err != nil {
