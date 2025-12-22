@@ -41,14 +41,14 @@ func main() {
 			return
 		}
 	}
-	shortener := handlers.NewShortener(logger, st)
 
+	shortener := handlers.NewShortener(logger, st)
 	server := &http.Server{
 		Addr:           ":8080",
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
-		Handler:        shortener,
+		Handler:        shortener.Handler(),
 	}
 
 	// - SIGINT: Keyboard interrupt, triggered by CTRL-C.
