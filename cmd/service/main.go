@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -22,9 +23,10 @@ func main() {
 		os.Exit(returnCode)
 	}()
 
-	f, err := os.OpenFile("urls.txt", os.O_CREATE|os.O_RDWR, 0o644)
+	storagePath := filepath.Join(os.Getenv("DATA_PATH"), "urls.txt")
+	f, err := os.OpenFile(storagePath, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
-		logger.ErrorContext(rootCtx, "failed to open urls.txt", "error", err)
+		logger.ErrorContext(rootCtx, "failed to open storage file", "error", err, "path", storagePath, "user", os.Getenv("USER"))
 		returnCode = 1
 		return
 	}

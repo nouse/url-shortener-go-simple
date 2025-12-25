@@ -1,0 +1,70 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: shortener-pv
+spec:
+  capacity:
+    storage: 10Mi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/shortener # docker exec -it kind-control-plane chown 65532:65532 /data/shortener
+    type: Directory
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shortener-pvc
+  annotations:
+    volumeType: local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "" # ignoring storageClass doesn't match
+  volumeName: shortener-pv
+  resources:
+    requests:
+      storage: 10Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shortener
+spec:
+  replicas: 1
+  selector:
+    matchLabels:  # Tell which pods this deployment manages
+      app: shortener
+  template:
+    metadata:
+      labels:  # Apply labels for pod
+        app: shortener
+    spec:
+      containers:
+        - name: shortener
+          image: ko://github.com/nouse/url-shortener-go-simple/cmd/service
+          imagePullPolicy: Never # https://kind.sigs.k8s.io/docs/user/quick-start/#loading-an-image-into-your-cluster
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATA_PATH
+              value: /data
+          volumeMounts:
+            - name: storage
+              mountPath: /data # path inside pod
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: shortener-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shortener
+spec:
+  selector:
+    app: shortener
+  ports:
+    - port: 8080
+      targetPort: 8080

@@ -1,0 +1,3 @@
+dockerRepo: kind.local
+defaultPlatforms:
+  - linux/arm64
