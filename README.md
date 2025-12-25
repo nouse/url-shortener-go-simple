@@ -27,11 +27,6 @@ MacOS can build a k8s cluster with below after [Homebrew](https://brew.sh/) is i
 ```shell
 brew install ko kind kubernetes-cli
 kind create cluster
-echo "create host path for persistent volume"
-docker exec kind-control-plane mkdir -p /data/shortener
-echo "change host path to nonroot user"
-echo "learn more at https://images.chainguard.dev/directory/image/static/overview#usage"
-docker exec kind-control-plane chown 65532:65532 /data/shortener
 ```
 
 ### Use ko to build and push to kind cluster
