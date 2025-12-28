@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/VictoriaMetrics/metrics"
 	"github.com/nouse/url-shortener-go-simple/storage"
 )
 
@@ -27,6 +28,10 @@ func NewShortener(logger *slog.Logger, storage storage.Storage) *Shortener {
 	s.mux.HandleFunc("GET /x/{code}", s.Get)
 	s.mux.HandleFunc("GET /info/{code}", s.GetInfo)
 	s.mux.HandleFunc("GET /ping", heartbeat)
+
+	s.mux.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
+		metrics.WritePrometheus(w, true)
+	})
 	return s
 }
 

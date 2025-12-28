@@ -1,0 +1,15 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: url-shortener-go-simple
+build:
+  artifacts:
+    - image: go-service
+      ko:
+        main: ./cmd/service
+        dependencies:
+          paths:
+            - "**/*.go"
+manifests:
+  rawYaml:
+    - deploy/skaffold/shortener.yml
